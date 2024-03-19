@@ -78,16 +78,14 @@ for (const href of hrefs) {
 
     await db
       .insert(payouts)
-      .values([
-        {
-          ...result,
-          buyInValue,
-          eventId,
-          eventIndex,
-          eventName,
-          flight,
-        },
-      ])
+      .values({
+        ...result,
+        buyInValue,
+        eventId,
+        eventIndex,
+        eventName,
+        flight,
+      })
       .execute();
     console.log(i++);
   }
