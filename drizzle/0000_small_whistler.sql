@@ -3,7 +3,7 @@ CREATE TABLE `payouts` (
 	`place` integer,
 	`name` text,
 	`country` text,
-	`prizeTwd` integer,
+	`prizeTwd` numeric DEFAULT 0,
 	`buyInValue` integer,
 	`eventId` text,
 	`eventIndex` integer,

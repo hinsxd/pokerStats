@@ -31,16 +31,43 @@ for (const href of hrefs) {
     .replace(/[^0-9]/g, "");
   const eventIndex = parseInt(eventIndexString);
 
-  const eventName = $$(
-    "div.col-span-3.md\\:min-w-\\[28rem\\].md\\:max-w-3xl.p-2 > h1"
-  ).text();
+  const eventName = $$("h1").text();
 
   const flight = eventName.match(/ - Flight (.+?) - /)?.[1] || null;
 
-  const resultsHtml = await fetch(`${url}/results`).then((res) => res.text());
-  const $$$ = load(resultsHtml);
+  const playersHtml = await fetch(`${url}/players`).then((res) => res.text());
+  const playersData = extractDataFromTable(playersHtml, "table");
+  if (!playersData?.length) continue;
+  const payoutsHtml = await fetch(`${url}/results`).then((res) => res.text());
+  const payoutsData = extractDataFromTable(payoutsHtml, "table");
 
-  const headers = $$$("table thead tr th")
+  for (let player of playersData) {
+    const playerPayout =
+      payoutsData.find((payout) => payout["name"] === player["name"]) ?? {};
+    Object.assign(player, {
+      eventId,
+      eventName,
+      eventIndex,
+      buyInValue,
+      flight,
+      ...playerPayout,
+    });
+    if (typeof player.name === "number") {
+      throw "fuck";
+    }
+  }
+  console.log({ eventIndex, eventName, playersData });
+  try {
+    await db.insert(payouts).values(playersData).execute();
+  } catch (e) {
+    throw e;
+  }
+  console.log(eventIndex, eventName);
+}
+
+function extractDataFromTable(html, tableSelector) {
+  const $ = load(html);
+  const headers = $(`${tableSelector} thead tr th`)
     .toArray()
     .map((el) => $(el).text())
     .map((text) => {
@@ -56,37 +83,24 @@ for (const href of hrefs) {
         })
         .join("");
     });
-
-  const resultRows = $$$("table tbody tr");
-
-  for (const row of resultRows.toArray()) {
+  const resultRows = $(`${tableSelector} tbody tr`);
+  const results = resultRows.toArray().map((row) => {
     const cells = $(row).find("td").toArray();
-    const result = headers.reduce((acc, header, i) => {
+    return headers.reduce((acc, header, i) => {
       try {
         const text = cells[i].firstChild.data;
         if (!text) return acc;
         // is string is number, convert it to number
-        const isNumber = text.replace(/[^0-9]/g, "").length > 0;
-        if (isNumber) {
-          acc[header] = parseInt(text.replace(/[^0-9]/g, ""));
+        //
+        const isNumberTextWithSeparator = text.match(/^[0-9\.,]+$/g);
+        if (isNumberTextWithSeparator) {
+          acc[header] = parseFloat(text.replace(/,/g, ""));
         } else {
-          acc[header] = text;
+          acc[header] = text.trim();
         }
       } catch (e) {}
       return acc;
     }, {});
-
-    await db
-      .insert(payouts)
-      .values({
-        ...result,
-        buyInValue,
-        eventId,
-        eventIndex,
-        eventName,
-        flight,
-      })
-      .execute();
-    console.log(i++);
-  }
+  });
+  return results;
 }

@@ -1,7 +1,7 @@
 {
   "version": "5",
   "dialect": "sqlite",
-  "id": "47e04fe2-86a6-4821-8a74-74560df80b7d",
+  "id": "f68b9f23-d1b8-418a-971f-23199fb689fb",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "payouts": {
@@ -37,10 +37,11 @@
         },
         "prizeTwd": {
           "name": "prizeTwd",
-          "type": "integer",
+          "type": "numeric",
           "primaryKey": false,
           "notNull": false,
-          "autoincrement": false
+          "autoincrement": false,
+          "default": 0
         },
         "buyInValue": {
           "name": "buyInValue",
